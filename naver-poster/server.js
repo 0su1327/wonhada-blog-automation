@@ -25,6 +25,15 @@ app.post('/post', async (req, res) => {
     await page.goto(`https://blog.naver.com/${NAVER_BLOG_ID}?Redirect=Write`);
     await page.waitForTimeout(3000);
 
+    // 세션이 만료되면 네이버가 로그인 화면(nid.naver.com)으로 자동으로 튕겨냅니다.
+    // 이걸 명확히 감지해서, 애매한 선택자 오류 대신 정확한 원인을 알려줍니다.
+    if (page.url().includes('nid.naver.com')) {
+      await browser.close();
+      return res.status(401).json({
+        error: '네이버 로그인 세션이 만료되었습니다. login-capture.js를 다시 실행해서 로그인해주세요.'
+      });
+    }
+
     // 실제 화면 구조 확인 결과, 스마트에디터는 iframe이 아니라 메인 문서 안에 바로 있습니다.
     // (일반적으로 알려진 정보와 달라서, 실제 확인 없이는 틀리기 쉬운 부분이었습니다.)
 
