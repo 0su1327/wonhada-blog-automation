@@ -20,8 +20,10 @@ const { chromium } = require('playwright');
     process.stdin.once('data', resolve);
   });
 
-  await context.storageState({ path: '/data/naver-session.json' });
-  console.log('로그인 세션이 저장되었습니다: /data/naver-session.json');
+  await context.storageState({ path: './naver-session.json' });
+  console.log('로그인 세션이 저장되었습니다: ./naver-session.json');
+  console.log('이제 다음 명령으로 이 파일을 컨테이너 안에 복사해주세요:');
+  console.log('  docker compose cp naver-session.json naver-poster:/data/naver-session.json');
 
   await browser.close();
   process.exit(0);
