@@ -26,6 +26,10 @@ flowchart TD
     G --> H["⑧ 사람이 네이버 블로그에서 확인 후 직접 '발행'"]
 ```
 
+<img width="1064" height="365" alt="image" src="https://github.com/user-attachments/assets/f73b4039-48b7-45bb-b65f-f8a4b177da7b" />
+
+
+
 ---
 
 ## 폴더 구조
