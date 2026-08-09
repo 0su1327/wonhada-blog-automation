@@ -22,23 +22,22 @@
     },
     {
       "parameters": {
-        "operation": "read",
-        "sheetName": "이력",
-        "options": {}
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nif (!staticData.postHistory) { staticData.postHistory = []; }\n// 이력이 하나도 없어도(첫 실행) 최소 1개의 결과를 반환해야 워크플로우가 멈추지 않습니다.\nif (staticData.postHistory.length === 0) {\n  return [{ json: { empty: true } }];\n}\nreturn staticData.postHistory.map(h => ({ json: h }));"
       },
       "id": "sheets-read-node",
       "name": "1.5 이전 포스팅 이력 조회",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         -100,
         160
       ],
-      "notes": "구글 시트에 '날짜 | 제목 | 요약' 열로 이력을 쌓아둡니다. Credentials에 구글 계정 연결 필요."
+      "notes": "Google Cloud/구글시트 없이, n8n 워크플로우 안(Static Data)에 이력을 저장합니다.",
+      "alwaysOutputData": true
     },
     {
       "parameters": {
-        "jsCode": "const body = $('1. 폼 데이터 수신').first().json.body;\nconst direction = body.direction || '';\nconst angles = (body.angles || []).join(', ');\nconst photos = body.photos || [];\n\n// 이전 이력 중 최근 15개만 요약 텍스트로 정리\nconst historyRows = $input.all().map(item => item.json);\nconst recentHistory = historyRows.slice(-15);\nconst historyText = recentHistory.length\n  ? recentHistory.map(r => `- (${r['날짜']}) ${r['제목']}: ${r['요약']}`).join('\\n')\n  : '(아직 이력 없음)';\n\nconst contentBlocks = [];\nfor (const p of photos) {\n  const match = /^data:(image\\/\\w+);base64,(.+)$/.exec(p.imageData || '');\n  if (match) {\n    contentBlocks.push({\n      type: 'image',\n      source: { type: 'base64', media_type: match[1], data: match[2] }\n    });\n  }\n  contentBlocks.push({ type: 'text', text: `[사진 ${p.order}] 설명: ${p.caption}` });\n}\n\ncontentBlocks.push({\n  type: 'text',\n  text: `\\n전체 방향: ${direction}\\n강조하고 싶은 톤: ${angles}\\n\\n최근에 올렸던 글 목록(참고용):\\n${historyText}\\n\\n위 사진/설명을 바탕으로 '원하다 필라테스' 네이버 블로그 글을 작성해줘. 다음 원칙을 지켜줘:\\n1. 도입부(hook): 이미 다니는 회원이 아니라, 검색으로 처음 들어온 사람도 공감할 만한 문장으로 시작 (막연한 일지체 금지)\\n2. 본문: 사진 설명들을 자연스럽게 녹여서 서술하되, 왜 그 동작/수업이 도움이 되는지 이유를 함께 설명\\n3. 최근 글 목록과 소재·표현·구성이 겹치지 않도록 새로운 각도로 작성\\n4. 소제목마다 관련된 이모지를 하나씩 붙여서 시각적으로 스캔하기 쉽게 구성 (예: 🧱 왜 벽을 활용할까요?)\\n5. 마지막에 처음 오는 사람이 다음 행동을 취하도록 유도하는 CTA 한 문장 포함 (예: 체험 문의 유도)\\n\\n해시태그와 문의전화·주소·영업시간은 네가 작성하지 마 — 별도로 고정 삽입돼.\\n\\n다음 JSON 형식으로만 응답해줘 (다른 설명 없이):\\n{\"title\": \"글 제목\", \"summary\": \"한 줄 요약(다음 번 중복 체크용, 20자 내외)\", \"hook\": \"도입부 1~2문장\", \"body\": \"본문 전체(도입부 제외), 사진은 [사진 N] 위치 표시\", \"cta\": \"마무리 유도 문장 1개\"}`\n});\n\nreturn [{ json: { contentBlocks } }];"
+        "jsCode": "const body = $('1. 폼 데이터 수신').first().json.body;\nconst direction = body.direction || '';\nconst angles = (body.angles || []).join(', ');\nconst photos = body.photos || [];\n\n// 이전 이력 중 최근 15개만 요약 텍스트로 정리\nlet historyRows = $input.all().map(item => item.json);\n// '1.5' 노드가 이력이 없을 때 보내는 더미 표시(empty:true)는 실제 이력이 아니므로 걸러냅니다.\nhistoryRows = historyRows.filter(r => !r.empty);\nconst recentHistory = historyRows.slice(-15);\nconst historyText = recentHistory.length\n  ? recentHistory.map(r => `- (${r['날짜']}) ${r['제목']}: ${r['요약']}`).join('\\n')\n  : '(아직 이력 없음)';\n\nconst contentBlocks = [];\nfor (const p of photos) {\n  const match = /^data:(image\\/\\w+);base64,(.+)$/.exec(p.imageData || '');\n  if (match) {\n    contentBlocks.push({\n      type: 'image',\n      source: { type: 'base64', media_type: match[1], data: match[2] }\n    });\n  }\n  contentBlocks.push({ type: 'text', text: `[사진 ${p.order}] 설명: ${p.caption}` });\n}\n\ncontentBlocks.push({\n  type: 'text',\n  text: `\\n전체 방향: ${direction}\\n강조하고 싶은 톤: ${angles}\\n\\n최근에 올렸던 글 목록(참고용):\\n${historyText}\\n\\n위 사진/설명을 바탕으로 '원하다 필라테스' 네이버 블로그 글을 작성해줘. 다음 원칙을 지켜줘:\\n1. 도입부(hook): 이미 다니는 회원이 아니라, 검색으로 처음 들어온 사람도 공감할 만한 문장으로 시작 (막연한 일지체 금지)\\n2. 본문: 사진 설명들을 자연스럽게 녹여서 서술하되, 왜 그 동작/수업이 도움이 되는지 이유를 함께 설명\\n3. 최근 글 목록과 소재·표현·구성이 겹치지 않도록 새로운 각도로 작성\\n4. 소제목마다 관련된 이모지를 하나씩 붙여서 시각적으로 스캔하기 쉽게 구성 (예: 🧱 왜 벽을 활용할까요?)\\n5. 마지막에 처음 오는 사람이 다음 행동을 취하도록 유도하는 CTA 한 문장 포함 (예: 체험 문의 유도)\\n\\n해시태그와 문의전화·주소·영업시간은 네가 작성하지 마 — 별도로 고정 삽입돼.\\n\\n다음 JSON 형식으로만 응답해줘 (다른 설명 없이):\\n{\"title\": \"글 제목\", \"summary\": \"한 줄 요약(다음 번 중복 체크용, 20자 내외)\", \"hook\": \"도입부 1~2문장\", \"body\": \"본문 전체(도입부 제외), 사진은 [사진 N] 위치 표시\", \"cta\": \"마무리 유도 문장 1개\"}`\n});\n\nreturn [{ json: { contentBlocks } }];"
       },
       "id": "build-prompt-node",
       "name": "2. 프롬프트 구성",
@@ -87,7 +86,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const raw = $input.first().json.content[0].text;\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n  parsed = match ? JSON.parse(match[0]) : { title: '제목 파싱 실패', summary: '', hook: '', body: raw, cta: '', hashtags: [] };\n}\nreturn [{ json: {\n  title: parsed.title,\n  summary: parsed.summary,\n  hook: parsed.hook,\n  body: parsed.body,\n  cta: parsed.cta,\n  hashtags: parsed.hashtags || [],\n  date: new Date().toISOString().slice(0, 10)\n} }];"
+        "jsCode": "// content 배열 안에서 'text' 타입 블록을 명시적으로 찾습니다.\n// (항상 content[0]이 텍스트라고 가정하면 안 됩니다 — 다른 블록이 먼저 올 수 있습니다)\nconst contentBlocks = $input.first().json.content || [];\nconst textBlock = contentBlocks.find(b => b && b.type === 'text');\nconst raw = textBlock ? textBlock.text : undefined;\n\nif (!raw) {\n  // 무엇이 왔는지 명확히 알 수 있도록 원본 응답을 에러 메시지에 그대로 포함시킵니다.\n  throw new Error('Claude 응답에서 텍스트를 찾지 못했습니다. 실제 응답: ' + JSON.stringify($input.first().json).slice(0, 1000));\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n  parsed = match ? JSON.parse(match[0]) : { title: '제목 파싱 실패', summary: '', hook: '', body: raw, cta: '', hashtags: [] };\n}\n\nreturn [{ json: {\n  title: parsed.title,\n  summary: parsed.summary,\n  hook: parsed.hook,\n  body: parsed.body,\n  cta: parsed.cta,\n  hashtags: parsed.hashtags || [],\n  date: new Date().toISOString().slice(0, 10)\n} }];"
       },
       "id": "format-node",
       "name": "4. 메시지 포맷",
@@ -100,7 +99,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// ⚠️ 지금은 본인 네이버 블로그로 테스트하는 단계이니, 아래 원하다 필라테스용 고정정보는 비워두거나 테스트용으로 바꿔서 쓰세요. 실제 어머니 블로그로 넘어갈 때 다시 채우면 됩니다.\\nconst FOOTER = ``; // 예: `\\\\n\\\\n✅️ 문의전화\\\\n062-511-1111 ...`\\nconst FIXED_HASHTAGS = []; // 예: ['광주요가', '광주필라테스', ...]\\nconst hashtagLine = FIXED_HASHTAGS.map(h => '#' + h).join(' ');\\n\\nconst d = $input.first().json;\\n// Naver 자동 작성 노드가 title/hook/body/cta/footer를 각각 따로 받아서, 본문 안의 [사진 N] 위치에 사진을 끼워넣습니다.\\nreturn [{ json: { ...d, footer: `${d.cta}${FOOTER}${hashtagLine ? '\\\\n\\\\n' + hashtagLine : ''}` } }];"
+        "jsCode": "// 지금은 본인 네이버 블로그로 테스트하는 단계이니, 아래 원하다 필라테스용 고정정보는\n// 비워두거나 테스트용으로 바꿔서 쓰세요. 실제 어머니 블로그로 넘어갈 때 다시 채우면 됩니다.\nconst FOOTER = ``; // 예: `문의전화 062-511-1111 ...`\nconst FIXED_HASHTAGS = []; // 예: ['광주요가', '광주필라테스']\n\nconst hashtagLine = FIXED_HASHTAGS.map(h => '#' + h).join(' ');\nconst d = $input.first().json;\n\nconst footerText = d.cta + FOOTER + (hashtagLine ? ('\\n\\n' + hashtagLine) : '');\n\nreturn [{ json: Object.assign({}, d, { footer: footerText }) }];"
       },
       "id": "footer-insert-node",
       "name": "4.5 고정 안내 문구 삽입",
@@ -114,26 +113,17 @@
     },
     {
       "parameters": {
-        "operation": "append",
-        "sheetName": "이력",
-        "columns": {
-          "value": {
-            "날짜": "={{ $('4. 메시지 포맷').first().json.date }}",
-            "제목": "={{ $('4. 메시지 포맷').first().json.title }}",
-            "요약": "={{ $('4. 메시지 포맷').first().json.summary }}"
-          }
-        },
-        "options": {}
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nif (!staticData.postHistory) { staticData.postHistory = []; }\nconst d = $('4.5 고정 안내 문구 삽입').first().json;\nstaticData.postHistory.push({ '날짜': d.date, '제목': d.title, '요약': d.summary });\n// 최근 50개까지만 보관 (너무 오래된 건 자동 정리)\nif (staticData.postHistory.length > 50) { staticData.postHistory = staticData.postHistory.slice(-50); }\nreturn [{ json: { saved: true } }];"
       },
       "id": "sheets-append-node",
       "name": "8. 이력 기록",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         1120,
         200
       ],
-      "notes": "카카오 발송과 별개로, Claude 응답이 나온 직후 바로 실행되도록 4번 노드에서 갈라져도 됩니다."
+      "notes": "Google Cloud/구글시트 없이, n8n 워크플로우 안(Static Data)에 이력을 저장합니다."
     },
     {
       "parameters": {
