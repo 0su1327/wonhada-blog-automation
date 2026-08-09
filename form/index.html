@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>원하다 필라테스 — 블로그 소재 준비</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css" />
+<style>
+  :root{
+    --bg: #F6F2E9;
+    --ink: #2B2B27;
+    --ink-soft: #6B665C;
+    --forest: #33452F;
+    --forest-deep: #232F20;
+    --sage: #DCE4D3;
+    --sage-line: #C7D2BB;
+    --gold: #B0863F;
+    --line: #DED5C0;
+    --card: #FFFFFF;
+    --radius: 14px;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+    line-height: 1.6;
+    padding: 0 20px 80px;
+  }
+  .wrap{ max-width: 680px; margin: 0 auto; }
+
+  header{
+    padding: 56px 0 32px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 40px;
+  }
+  .eyebrow{
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--forest);
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  h1{
+    font-family: 'Noto Serif KR', serif;
+    font-weight: 700;
+    font-size: 32px;
+    margin: 0 0 12px;
+    color: var(--forest-deep);
+    letter-spacing: -0.01em;
+  }
+  header p{
+    color: var(--ink-soft);
+    font-size: 15px;
+    margin: 0;
+    max-width: 46ch;
+  }
+
+  section{ margin-bottom: 44px; }
+  .sec-label{
+    font-family: 'Noto Serif KR', serif;
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--forest-deep);
+    margin: 0 0 6px;
+  }
+  .sec-hint{
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+  }
+
+  textarea, input[type=text]{
+    width: 100%;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    resize: vertical;
+    transition: border-color .15s ease;
+  }
+  textarea:focus, input:focus, button:focus-visible{
+    outline: 2px solid var(--forest);
+    outline-offset: 2px;
+    border-color: var(--forest);
+  }
+  textarea::placeholder{ color: #A9A398; }
+
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .chip{
+    font-size: 13.5px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--sage-line);
+    background: var(--sage);
+    color: var(--forest-deep);
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s ease, color .15s ease;
+  }
+  .chip[data-on="true"]{
+    background: var(--forest);
+    color: #F6F2E9;
+    border-color: var(--forest);
+  }
+
+  .dropzone{
+    border: 1.5px dashed var(--sage-line);
+    border-radius: var(--radius);
+    background: #FBFAF6;
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+  .dropzone:hover{ border-color: var(--forest); }
+  .dropzone strong{ color: var(--forest-deep); display:block; margin-bottom:4px; font-size: 15px;}
+
+  .photo-list{ display:flex; flex-direction:column; gap:16px; margin-top: 20px; }
+  .photo-card{
+    display:flex; gap:16px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px;
+    align-items: flex-start;
+  }
+  .photo-thumb-wrap{ position:relative; flex-shrink:0; }
+  .photo-thumb{
+    width: 96px; height: 96px;
+    object-fit: cover;
+    border-radius: 10px;
+    background: var(--sage);
+    display:block;
+  }
+  .photo-num{
+    position:absolute; top:-8px; left:-8px;
+    background: var(--gold);
+    color:#fff;
+    font-size: 11px;
+    font-weight: 700;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .photo-body{ flex:1; min-width:0; }
+  .photo-body label{
+    display:block; font-size: 12.5px; color: var(--ink-soft); margin-bottom:6px;
+  }
+  .photo-body textarea{ min-height: 64px; font-size: 14px; }
+  .photo-remove{
+    background:none; border:none; color:#B3402F; font-size:12.5px; cursor:pointer;
+    padding: 6px 0 0; text-decoration: underline; text-underline-offset:2px;
+  }
+
+  .cta{
+    width: 100%;
+    background: var(--forest);
+    color: #F6F2E9;
+    border: none;
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: 15.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s ease, transform .1s ease;
+  }
+  .cta:hover{ background: var(--forest-deep); }
+  .cta:active{ transform: translateY(1px); }
+  .cta:disabled{ background:#B7B7AD; cursor:not-allowed; }
+
+  .footnote{
+    font-size: 12.5px; color: var(--ink-soft); text-align:center; margin-top:12px;
+  }
+
+  .preview{
+    margin-top: 28px;
+    background: var(--forest-deep);
+    color: #F1EEE5;
+    border-radius: var(--radius);
+    padding: 22px 22px 24px;
+    display:none;
+  }
+  .preview.show{ display:block; }
+  .preview h3{
+    font-family:'Noto Serif KR', serif;
+    font-size: 16px; margin: 0 0 10px; color: #E9E1CE;
+  }
+  .preview pre{
+    white-space: pre-wrap; word-break: break-word;
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; line-height:1.6;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 14px;
+    max-height: 260px; overflow:auto;
+    margin:0;
+  }
+
+  @media (max-width: 520px){
+    header{ padding: 40px 0 24px; }
+    h1{ font-size: 26px; }
+    .photo-card{ flex-direction: column; }
+    .photo-thumb{ width: 100%; height: 160px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important; scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">원하다 필라테스 · 블로그 소재 준비</div>
+    <h1>이번 수업, 어떤 이야기를<br>담아볼까요?</h1>
+    <p>사진과 짧은 메모만 남겨주시면, 신규 회원분들이 보고 궁금해질 만한 블로그 글 초안으로 만들어 드릴게요.</p>
+  </header>
+
+  <section>
+    <p class="sec-label">01 · 이번 글의 방향</p>
+    <p class="sec-hint">이번 글에서 가장 강조하고 싶은 것을 자유롭게 적어주세요. (예: 새로 오신 회원님 적응기, 이번 주 배운 동작, 원장님이 신경 쓰는 부분 등)</p>
+    <textarea id="direction" rows="4" placeholder="예) 이번 주에는 처음 오신 분들이 많아서, 초보자도 편하게 따라올 수 있었던 수업 분위기를 강조하고 싶어요."></textarea>
+
+    <div class="chip-row" id="angleChips">
+      <div class="chip" data-on="false">체험 후기 느낌으로</div>
+      <div class="chip" data-on="false">수업 분위기 강조</div>
+      <div class="chip" data-on="false">원장님 소개/전문성</div>
+      <div class="chip" data-on="false">오늘 배운 동작 설명</div>
+      <div class="chip" data-on="false">이벤트/신규 안내</div>
+    </div>
+  </section>
+
+  <section>
+    <p class="sec-label">02 · 사진 올리기</p>
+    <p class="sec-hint">사진은 블로그에 들어갈 순서대로 올려주세요. 각 사진 아래에 어떤 장면인지 한두 줄만 적어주시면 됩니다.</p>
+
+    <div class="dropzone" id="dropzone">
+      <strong>사진을 선택하거나 여기로 끌어다 놓으세요</strong>
+      여러 장을 한 번에 올릴 수 있어요
+    </div>
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+
+    <div class="photo-list" id="photoList"></div>
+  </section>
+
+  <button class="cta" id="submitBtn">이 내용으로 초안 만들기</button>
+  <p class="footnote">제출하면 자동화 파이프라인이 사진과 메모를 바탕으로 블로그 글 초안을 생성합니다.</p>
+
+  <div class="preview" id="previewBox">
+    <h3>전송될 내용 미리보기</h3>
+    <pre id="previewText"></pre>
+  </div>
+
+</div>
+
+<script>
+  let photos = []; // {id, dataURL, caption}
+  let nextId = 1;
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const photoList = document.getElementById('photoList');
+  const submitBtn = document.getElementById('submitBtn');
+  const previewBox = document.getElementById('previewBox');
+  const previewText = document.getElementById('previewText');
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.style.borderColor = 'var(--forest)'; });
+  dropzone.addEventListener('dragleave', () => { dropzone.style.borderColor = ''; });
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.style.borderColor = '';
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+  function handleFiles(fileList){
+    Array.from(fileList).forEach(file => {
+      if(!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        photos.push({ id: nextId++, dataURL: e.target.result, caption: '' });
+        renderPhotos();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderPhotos(){
+    photoList.innerHTML = '';
+    photos.forEach((p, idx) => {
+      const card = document.createElement('div');
+      card.className = 'photo-card';
+      card.innerHTML = `
+        <div class="photo-thumb-wrap">
+          <span class="photo-num">${idx+1}</span>
+          <img class="photo-thumb" src="${p.dataURL}" alt="업로드 사진 ${idx+1}">
+        </div>
+        <div class="photo-body">
+          <label>이 사진에서 있었던 일</label>
+          <textarea data-id="${p.id}" placeholder="예) 회원님들이 처음으로 롤업 동작을 연습하는 모습이에요">${p.caption}</textarea>
+          <button class="photo-remove" data-id="${p.id}">이 사진 지우기</button>
+        </div>
+      `;
+      photoList.appendChild(card);
+    });
+
+    photoList.querySelectorAll('textarea').forEach(t => {
+      t.addEventListener('input', e => {
+        const id = Number(e.target.dataset.id);
+        const p = photos.find(p => p.id === id);
+        if(p) p.caption = e.target.value;
+      });
+    });
+    photoList.querySelectorAll('.photo-remove').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const id = Number(e.target.dataset.id);
+        photos = photos.filter(p => p.id !== id);
+        renderPhotos();
+      });
+    });
+  }
+
+  document.querySelectorAll('#angleChips .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const on = chip.getAttribute('data-on') === 'true';
+      chip.setAttribute('data-on', String(!on));
+    });
+  });
+
+  // ⚠️ n8n에서 Webhook 노드를 만들면 나오는 Production URL을 여기에 붙여넣으세요.
+  // 예: "https://your-n8n-instance.app.n8n.cloud/webhook/wonhada-blog-input"
+  // 로컬(어머니 PC)에서 실행 중인 n8n으로 직접 전송합니다.
+  const WEBHOOK_URL = "http://localhost:5678/webhook/wonhada-blog-input";
+
+  submitBtn.addEventListener('click', async () => {
+    const direction = document.getElementById('direction').value.trim();
+    const angles = Array.from(document.querySelectorAll('#angleChips .chip[data-on="true"]')).map(c => c.textContent);
+
+    if (photos.length === 0) {
+      previewText.textContent = "사진을 1장 이상 올려주세요.";
+      previewBox.classList.add('show');
+      return;
+    }
+
+    const payload = {
+      direction: direction || '(작성 안 함)',
+      angles,
+      photos: photos.map((p, i) => ({ order: i + 1, caption: p.caption || '(설명 없음)', imageData: p.dataURL }))
+    };
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "전송 중...";
+    previewText.textContent = "전송 중입니다. 잠시만 기다려주세요.";
+    previewBox.classList.add('show');
+    previewBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        previewText.textContent = "전송 완료! 잠시 후 카카오톡으로 초안이 도착합니다.";
+      } else {
+        previewText.textContent = `전송 실패 (상태 코드: ${res.status}). n8n 워크플로우가 켜져 있는지 확인해주세요.`;
+      }
+    } catch (err) {
+      previewText.textContent = "전송 중 오류가 발생했습니다: " + err.message + "\n(WEBHOOK_URL 설정을 확인해주세요.)";
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "이 내용으로 초안 만들기";
+    }
+  });
+</script>
+</body>
+</html>

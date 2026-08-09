@@ -1,0 +1,233 @@
+{
+  "name": "원하다 필라테스 블로그 초안 자동화",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wonhada-blog-input",
+        "responseMode": "onReceived",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "webhook-node",
+      "name": "1. 폼 데이터 수신",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ],
+      "notes": "로컬 전용(localhost)이라 외부에서 이 주소로 접근할 수 없으므로 별도 인증은 불필요합니다. Vercel 폼(다른 출처)에서 오는 요청을 허용하기 위해 allowedOrigins만 열어둡니다."
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetName": "이력",
+        "options": {}
+      },
+      "id": "sheets-read-node",
+      "name": "1.5 이전 포스팅 이력 조회",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        -100,
+        160
+      ],
+      "notes": "구글 시트에 '날짜 | 제목 | 요약' 열로 이력을 쌓아둡니다. Credentials에 구글 계정 연결 필요."
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $('1. 폼 데이터 수신').first().json.body;\nconst direction = body.direction || '';\nconst angles = (body.angles || []).join(', ');\nconst photos = body.photos || [];\n\n// 이전 이력 중 최근 15개만 요약 텍스트로 정리\nconst historyRows = $input.all().map(item => item.json);\nconst recentHistory = historyRows.slice(-15);\nconst historyText = recentHistory.length\n  ? recentHistory.map(r => `- (${r['날짜']}) ${r['제목']}: ${r['요약']}`).join('\\n')\n  : '(아직 이력 없음)';\n\nconst contentBlocks = [];\nfor (const p of photos) {\n  const match = /^data:(image\\/\\w+);base64,(.+)$/.exec(p.imageData || '');\n  if (match) {\n    contentBlocks.push({\n      type: 'image',\n      source: { type: 'base64', media_type: match[1], data: match[2] }\n    });\n  }\n  contentBlocks.push({ type: 'text', text: `[사진 ${p.order}] 설명: ${p.caption}` });\n}\n\ncontentBlocks.push({\n  type: 'text',\n  text: `\\n전체 방향: ${direction}\\n강조하고 싶은 톤: ${angles}\\n\\n최근에 올렸던 글 목록(참고용):\\n${historyText}\\n\\n위 사진/설명을 바탕으로 '원하다 필라테스' 네이버 블로그 글을 작성해줘. 다음 원칙을 지켜줘:\\n1. 도입부(hook): 이미 다니는 회원이 아니라, 검색으로 처음 들어온 사람도 공감할 만한 문장으로 시작 (막연한 일지체 금지)\\n2. 본문: 사진 설명들을 자연스럽게 녹여서 서술하되, 왜 그 동작/수업이 도움이 되는지 이유를 함께 설명\\n3. 최근 글 목록과 소재·표현·구성이 겹치지 않도록 새로운 각도로 작성\\n4. 소제목마다 관련된 이모지를 하나씩 붙여서 시각적으로 스캔하기 쉽게 구성 (예: 🧱 왜 벽을 활용할까요?)\\n5. 마지막에 처음 오는 사람이 다음 행동을 취하도록 유도하는 CTA 한 문장 포함 (예: 체험 문의 유도)\\n\\n해시태그와 문의전화·주소·영업시간은 네가 작성하지 마 — 별도로 고정 삽입돼.\\n\\n다음 JSON 형식으로만 응답해줘 (다른 설명 없이):\\n{\"title\": \"글 제목\", \"summary\": \"한 줄 요약(다음 번 중복 체크용, 20자 내외)\", \"hook\": \"도입부 1~2문장\", \"body\": \"본문 전체(도입부 제외), 사진은 [사진 N] 위치 표시\", \"cta\": \"마무리 유도 문장 1개\"}`\n});\n\nreturn [{ json: { contentBlocks } }];"
+      },
+      "id": "build-prompt-node",
+      "name": "2. 프롬프트 구성",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $credentials.anthropicApi.apiKey }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"claude-sonnet-5\", max_tokens: 1500, messages: [{ role: \"user\", content: $json.contentBlocks }] }) }}",
+        "options": {}
+      },
+      "id": "claude-call-node",
+      "name": "3. Claude로 초안 생성",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "notes": "n8n Credentials에 anthropicApi (커스텀 Header Auth 또는 HTTP Header Auth)로 API 키를 등록해서 연결하세요."
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.content[0].text;\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch (e) {\n  const match = raw.match(/\\{[\\s\\S]*\\}/);\n  parsed = match ? JSON.parse(match[0]) : { title: '제목 파싱 실패', summary: '', hook: '', body: raw, cta: '', hashtags: [] };\n}\nreturn [{ json: {\n  title: parsed.title,\n  summary: parsed.summary,\n  hook: parsed.hook,\n  body: parsed.body,\n  cta: parsed.cta,\n  hashtags: parsed.hashtags || [],\n  date: new Date().toISOString().slice(0, 10)\n} }];"
+      },
+      "id": "format-node",
+      "name": "4. 메시지 포맷",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ⚠️ 지금은 본인 네이버 블로그로 테스트하는 단계이니, 아래 원하다 필라테스용 고정정보는 비워두거나 테스트용으로 바꿔서 쓰세요. 실제 어머니 블로그로 넘어갈 때 다시 채우면 됩니다.\\nconst FOOTER = ``; // 예: `\\\\n\\\\n✅️ 문의전화\\\\n062-511-1111 ...`\\nconst FIXED_HASHTAGS = []; // 예: ['광주요가', '광주필라테스', ...]\\nconst hashtagLine = FIXED_HASHTAGS.map(h => '#' + h).join(' ');\\n\\nconst d = $input.first().json;\\n// Naver 자동 작성 노드가 title/hook/body/cta/footer를 각각 따로 받아서, 본문 안의 [사진 N] 위치에 사진을 끼워넣습니다.\\nreturn [{ json: { ...d, footer: `${d.cta}${FOOTER}${hashtagLine ? '\\\\n\\\\n' + hashtagLine : ''}` } }];"
+      },
+      "id": "footer-insert-node",
+      "name": "4.5 고정 안내 문구 삽입",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        0
+      ],
+      "notes": "hook/body/footer를 합치지 않고 각각 유지해야, 네이버 자동 작성 단계에서 본문 중간에 사진을 정확히 끼워넣을 수 있습니다."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetName": "이력",
+        "columns": {
+          "value": {
+            "날짜": "={{ $('4. 메시지 포맷').first().json.date }}",
+            "제목": "={{ $('4. 메시지 포맷').first().json.title }}",
+            "요약": "={{ $('4. 메시지 포맷').first().json.summary }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheets-append-node",
+      "name": "8. 이력 기록",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1120,
+        200
+      ],
+      "notes": "카카오 발송과 별개로, Claude 응답이 나온 직후 바로 실행되도록 4번 노드에서 갈라져도 됩니다."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://naver-poster:4000/post",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $json.title, hook: $json.hook, body: $json.body, cta: $json.cta, footer: $json.footer, photos: $('1. 폼 데이터 수신').first().json.body.photos }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "naver-post-node",
+      "name": "5. 네이버 블로그 임시저장",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        0
+      ],
+      "notes": "같은 docker-compose 안의 naver-poster 컨테이너(Playwright)를 호출해 네이버 블로그 글쓰기 화면에 직접 입력하고 임시저장합니다."
+    }
+  ],
+  "connections": {
+    "1. 폼 데이터 수신": {
+      "main": [
+        [
+          {
+            "node": "1.5 이전 포스팅 이력 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1.5 이전 포스팅 이력 조회": {
+      "main": [
+        [
+          {
+            "node": "2. 프롬프트 구성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. 프롬프트 구성": {
+      "main": [
+        [
+          {
+            "node": "3. Claude로 초안 생성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Claude로 초안 생성": {
+      "main": [
+        [
+          {
+            "node": "4. 메시지 포맷",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. 메시지 포맷": {
+      "main": [
+        [
+          {
+            "node": "4.5 고정 안내 문구 삽입",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4.5 고정 안내 문구 삽입": {
+      "main": [
+        [
+          {
+            "node": "5. 네이버 블로그 임시저장",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "8. 이력 기록",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
