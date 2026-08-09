@@ -371,7 +371,7 @@
         body: JSON.stringify(payload)
       });
       if (res.ok) {
-        previewText.textContent = "전송 완료! 잠시 후 카카오톡으로 초안이 도착합니다.";
+        previewText.textContent = "전송 완료! 잠시 후 네이버 블로그 '임시저장' 목록에서 확인하실 수 있어요.";
       } else {
         previewText.textContent = `전송 실패 (상태 코드: ${res.status}). n8n 워크플로우가 켜져 있는지 확인해주세요.`;
       }

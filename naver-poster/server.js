@@ -16,14 +16,17 @@ app.post('/post', async (req, res) => {
   }
 
   let browser;
+  let page;
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ storageState: SESSION_PATH });
-    const page = await context.newPage();
+    page = await context.newPage();
 
     // 네이버 블로그 글쓰기 화면으로 이동
-    await page.goto(`https://blog.naver.com/${NAVER_BLOG_ID}?Redirect=Write`);
-    await page.waitForTimeout(3000);
+    // 실제 확인된 글쓰기 화면 주소입니다.
+    await page.goto(`https://blog.naver.com/${NAVER_BLOG_ID}/postwrite`);
+    await page.waitForLoadState('networkidle').catch(() => {}); // 네트워크가 완전히 잠잠해질 때까지 대기 (안 되면 그냥 넘어감)
+    await page.waitForTimeout(5000);
 
     // 세션이 만료되면 네이버가 로그인 화면(nid.naver.com)으로 자동으로 튕겨냅니다.
     // 이걸 명확히 감지해서, 애매한 선택자 오류 대신 정확한 원인을 알려줍니다.
@@ -92,9 +95,17 @@ app.post('/post', async (req, res) => {
     await browser.close();
     res.json({ success: true });
   } catch (err) {
+    if (page) {
+      try {
+        await page.screenshot({ path: '/data/debug-screenshot.png', fullPage: true });
+        console.log('실패 시점의 화면을 /data/debug-screenshot.png 에 저장했습니다.');
+      } catch (screenshotErr) {
+        console.error('스크린샷 저장 실패:', screenshotErr.message);
+      }
+    }
     if (browser) await browser.close();
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message + ' (디버그용 스크린샷: docker compose cp naver-poster:/data/debug-screenshot.png . 명령으로 확인 가능)' });
   }
 });
 
